@@ -1,0 +1,13 @@
+[providers]
+providers = ['php']
+
+[phases.setup]
+nixPkgs = ['php82', 'php82Packages.composer', 'sqlite']
+
+[phases.build]
+cmds = [
+    'composer install --optimize-autoloader --no-dev'
+]
+
+[start]
+cmd = 'touch database/database.sqlite && php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT'
