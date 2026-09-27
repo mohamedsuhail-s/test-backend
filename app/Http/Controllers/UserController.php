@@ -9,48 +9,12 @@ use Illuminate\Http\JsonResponse;
 class UserController extends Controller
 {
     /**
-     * Display a listing of users.
+     * Display a listing of users from database.
      * GET /api/users
      */
     public function index(): JsonResponse
     {
         $users = User::latest()->get();
-
-        // If database has no users, return sample initial users structure
-        if ($users->isEmpty()) {
-            $initialUsers = [
-                [
-                    "id" => "usr_1",
-                    "name" => "Alex Morgan",
-                    "email" => "alex.morgan@company.com",
-                    "role" => "Super Admin",
-                    "department" => "Engineering",
-                    "status" => "Active",
-                    "avatar" => "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=250&q=80",
-                    "phone" => "+1 (555) 234-5678",
-                    "createdAt" => "2024-01-15",
-                    "lastActive" => "2 mins ago"
-                ],
-                [
-                    "id" => "usr_2",
-                    "name" => "Sarah Chen",
-                    "email" => "sarah.chen@company.com",
-                    "role" => "Admin",
-                    "department" => "Product",
-                    "status" => "Active",
-                    "avatar" => "https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=250&q=80",
-                    "phone" => "+1 (555) 876-5432",
-                    "createdAt" => "2024-02-01",
-                    "lastActive" => "15 mins ago"
-                ]
-            ];
-
-            return response()->json([
-                'status' => true,
-                'message' => 'Sample users retrieved successfully',
-                'data' => $initialUsers
-            ], 200);
-        }
 
         return response()->json([
             'status' => true,
@@ -60,7 +24,7 @@ class UserController extends Controller
     }
 
     /**
-     * Store a newly created user.
+     * Store a newly created user in database.
      * POST /api/users
      */
     public function store(Request $request): JsonResponse
@@ -108,7 +72,7 @@ class UserController extends Controller
     }
 
     /**
-     * Update specified user.
+     * Update specified user in database.
      * PUT/PATCH /api/users/{id}
      */
     public function update(Request $request, string $id): JsonResponse
@@ -142,7 +106,7 @@ class UserController extends Controller
     }
 
     /**
-     * Remove specified user.
+     * Remove specified user from database.
      * DELETE /api/users/{id}
      */
     public function destroy(string $id): JsonResponse
