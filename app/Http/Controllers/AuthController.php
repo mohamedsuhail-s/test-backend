@@ -131,19 +131,22 @@ class AuthController extends Controller
         );
 
         // Send Email OTP via Resend API
-        $sent = $this->sendOtpEmail($request->email, $otp);
+        $resendResult = $this->sendOtpEmail($request->email, $otp);
 
         $response = [
             'status' => true,
-            'message' => 'A 6-digit OTP verification code has been sent to your email.',
+            'message' => $resendResult['success']
+                ? 'A 6-digit OTP verification code has been sent to your email.'
+                : 'OTP generated. Email status: ' . ($resendResult['error'] ?? 'Check Resend configuration.'),
             'email' => $request->email,
-            'email_sent' => $sent,
+            'email_sent' => $resendResult['success'],
+            'resend_error' => $resendResult['error'],
         ];
 
-        // If Resend API key is not configured yet, include OTP in response for testing
-        if (!env('RESEND_API_KEY')) {
+        // If email failed or in debug mode, include debug OTP so testing is never blocked
+        if (!$resendResult['success'] || !config('services.resend.key')) {
             $response['otp_debug'] = $otp;
-            $response['message'] .= ' (Debug Mode: Demo OTP is ' . $otp . ')';
+            $response['message'] .= ' (Debug Mode: Your OTP is ' . $otp . ')';
         }
 
         return response()->json($response, 200);
@@ -237,21 +240,21 @@ class AuthController extends Controller
     /**
      * Helper to send OTP email using Resend Platform API.
      */
-    private function sendOtpEmail(string $email, string $otp): bool
+    private function sendOtpEmail(string $email, string $otp): array
     {
-        $resendApiKey = env('RESEND_API_KEY');
+        $resendApiKey = config('services.resend.key') ?? env('RESEND_API_KEY');
+        $fromEmail = config('services.resend.from') ?? env('RESEND_FROM_EMAIL') ?? 'onboarding@resend.dev';
 
         if (!$resendApiKey) {
-            Log::info("RESEND_API_KEY is not set in .env. OTP for {$email} is: {$otp}");
-            return false;
+            Log::info("RESEND_API_KEY is not set. OTP for {$email} is: {$otp}");
+            return ['success' => false, 'error' => 'RESEND_API_KEY is not set in environment variables.'];
         }
 
         try {
-            $fromEmail = env('RESEND_FROM_EMAIL', 'onboarding@resend.dev');
             $appName = config('app.name', 'AdminPulse');
 
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $resendApiKey,
+                'Authorization' => 'Bearer ' . trim($resendApiKey),
                 'Content-Type' => 'application/json',
             ])->post('https://api.resend.com/emails', [
                 'from' => "{$appName} <{$fromEmail}>",
@@ -269,10 +272,17 @@ class AuthController extends Controller
                 ",
             ]);
 
-            return $response->successful();
+            if ($response->successful()) {
+                return ['success' => true, 'error' => null];
+            } else {
+                $errorData = $response->json();
+                $errorMsg = $errorData['message'] ?? 'Resend API error status ' . $response->status();
+                Log::error("Resend API Failure for {$email}: " . json_encode($errorData));
+                return ['success' => false, 'error' => $errorMsg];
+            }
         } catch (\Exception $e) {
             Log::error("Failed to send OTP email via Resend: " . $e->getMessage());
-            return false;
+            return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 }
