@@ -14,6 +14,12 @@ use App\Http\Controllers\UserController;
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
 
+// Forgot Password & Resend Email OTP Routes
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+Route::post('/resend-otp', [AuthController::class, 'resendOtp']);
+Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Sanctum Token Authentication)
